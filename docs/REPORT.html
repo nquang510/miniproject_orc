@@ -1,0 +1,155 @@
+<!doctype html><html><head><meta charset='utf-8'><style>
+@page { size: A4; margin: 14mm 14mm 14mm 14mm; }
+body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.6pt; line-height: 1.38; color:#111; }
+h1 { font-size: 16pt; text-align:center; margin: 0 0 6px; }
+h2 { font-size: 11.5pt; margin: 12px 0 5px; padding-bottom:2px; border-bottom: 1.5px solid #00897B; color:#00695C; }
+p { margin: 4px 0; } ul { margin: 3px 0; padding-left: 18px; } li { margin: 1.5px 0; }
+hr { display:none; }
+table { border-collapse: collapse; width: 100%; margin: 5px 0; font-size: 8.8pt; }
+th, td { border: 1px solid #bbb; padding: 3px 5px; vertical-align: top; }
+th { background: #E0F2F1; }
+code { font-family: Consolas, monospace; font-size: 8.4pt; background:#f3f3f3; padding: 0 2px; }
+pre { background:#f5f5f5; padding:6px 8px; font-size: 8.2pt; line-height:1.3; border-radius:4px; }
+pre code { background:none; padding:0; }
+img { width: 100%; border: 1px solid #ccc; border-radius: 6px; }
+.shots td { width: 25%; text-align:center; font-size: 8pt; border: none; }
+.shots th { border:none; background:none; padding:2px; }
+</style></head><body><h1>MINI-PROJECT SHORT TECHNICAL REPORT</h1>
+<p><strong>Course:</strong> Cross-Platform Mobile App Development (VKU)<br />
+<strong>Mini-Project Title:</strong> Mini-Project 3 — OCR Expense Tracker &amp; Receipt Parser (Flutter &amp; Dart)<br />
+<strong>Team / Student Name:</strong> Nguyễn Phan Nhật Quang<br />
+<strong>Submission Date:</strong> 08/10/2026</p>
+<hr />
+<h2>1. GENERAL INFORMATION &amp; DELIVERABLE LINKS</h2>
+<ul>
+<li><strong>Team Members:</strong></li>
+<li>Nguyễn Phan Nhật Quang — Student ID: 23IT.B176 — Role: Individual project (architecture, OCR &amp; parser, database, UI/charts, testing) — Contribution: 100%</li>
+<li><strong>🔗 Live Demo URL (Release APK):</strong> <a href="https://github.com/nquang510/miniproject_orc/releases/download/v1.0.0/app-release.apk">app-release.apk</a> (universal) · <a href="https://github.com/nquang510/miniproject_orc/releases/download/v1.0.0/app-arm64-v8a-release.apk">arm64-v8a build, 31.9 MB</a> · <a href="https://github.com/nquang510/miniproject_orc/releases/tag/v1.0.0">Release page</a></li>
+<li><strong>💻 GitHub Repository:</strong> <a href="https://github.com/nquang510/miniproject_orc">https://github.com/nquang510/miniproject_orc</a></li>
+</ul>
+<p><strong>Tech stack:</strong> Flutter 3.47.6 · Dart 3.13 · <code>camera</code> · <code>google_mlkit_text_recognition</code> (on-device Latin model) · <code>sqflite</code> · <code>image</code> · <code>CustomPainter</code> (no chart library).</p>
+<hr />
+<h2>2. FEATURE IMPLEMENTATION CHECKLIST</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">#</th>
+<th>Required Feature</th>
+<th style="text-align: center;">Status</th>
+<th>Implementation Details &amp; Acceptance Level</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">1</td>
+<td>Camera capture &amp; image cropping</td>
+<td style="text-align: center;">✅ Complete</td>
+<td>Live <code>CameraPreview</code> with a flash cycle (off / auto / on / torch), tap-to-focus (<code>setFocusPoint</code> + <code>setExposurePoint</code>) with an animated focus ring, and a receipt framing overlay drawn by <code>CropOverlayPainter</code>. The still photo is cropped to the frame in a background isolate. The camera is released and re-acquired on app lifecycle changes. Gallery import and manual entry are fallbacks.</td>
+</tr>
+<tr>
+<td style="text-align: center;">2</td>
+<td>On-device text recognition</td>
+<td style="text-align: center;">✅ Complete</td>
+<td><code>google_mlkit_text_recognition</code> (bundled Latin model, works offline, no cloud cost). ML Kit's time is measured with a <code>Stopwatch</code> and shown on the review screen. OCR runs on the cropped image, downscaled to ≤1600 px, to keep latency low.</td>
+</tr>
+<tr>
+<td style="text-align: center;">3</td>
+<td>Regex heuristic parser</td>
+<td style="text-align: center;">✅ Complete</td>
+<td>Reads totals in <code>150,000 VND</code>, <code>150.000 đ</code>, <code>1.250.000</code>, <code>150,000.00</code> and <code>45k</code> formats; dates in <code>DD/MM/YYYY</code>, <code>DD-MM-YY</code>, <code>YYYY-MM-DD</code> and <code>Ngày … tháng … năm …</code>; merchant names from 39 known brands or from the receipt header. Each line is scored (total keywords +8, currency mark +2, cash/change/VAT/discount lines −7). Diacritics are folded first, and O-for-0 OCR errors are repaired. 16 unit tests.</td>
+</tr>
+<tr>
+<td style="text-align: center;">4</td>
+<td>Interactive review screen</td>
+<td style="text-align: center;">✅ Complete</td>
+<td>Every field can be edited. Fields carry a confidence hint (high / medium / low, with low highlighted). All detected amounts appear as tap-to-use chips, and the raw OCR text is expandable. Amounts are formatted as you type (<code>150.000 ₫</code>). Leaving an unsaved scan asks for confirmation and deletes its images.</td>
+</tr>
+<tr>
+<td style="text-align: center;">5</td>
+<td>Local database &amp; categories</td>
+<td style="text-align: center;">✅ Complete</td>
+<td><code>sqflite</code> table <code>expenses</code> with indexes on <code>date</code> and <code>category</code>. The five categories (Food, Study, Travel, Gear, Entertainment) are suggested automatically from brand and keyword matches. Supports create, edit, and delete with undo.</td>
+</tr>
+<tr>
+<td style="text-align: center;">6</td>
+<td>Receipt thumbnail caching</td>
+<td style="text-align: center;">✅ Complete</td>
+<td>The cropped JPEG and a 240 px thumbnail are saved in <code>&lt;app documents&gt;/receipts/</code>. The database stores relative file names. List tiles decode at display size (<code>cacheWidth</code>).</td>
+</tr>
+<tr>
+<td style="text-align: center;">7</td>
+<td>CustomPainter charts</td>
+<td style="text-align: center;">✅ Complete</td>
+<td><strong>Donut:</strong> sweeps in clockwise; tapping a slice (hit-tested by angle) thickens it and fades the others; legend is linked; Week / Month / All filter. <strong>Weekly bar chart:</strong> staggered bar growth, “nice” Y-axis steps, dashed grid, tooltip on tap, previous/next week navigation. No third-party chart package.</td>
+</tr>
+<tr>
+<td style="text-align: center;">8</td>
+<td>Extras</td>
+<td style="text-align: center;">✅ Complete</td>
+<td>History grouped by day with search and category filter, swipe-to-delete with undo, light/dark theme, 25 automated tests, <code>flutter analyze</code> with no issues.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>3. TECHNICAL ARCHITECTURE &amp; PROJECT STRUCTURE</h2>
+<pre><code>lib/
+├── core/      AppScope (InheritedNotifier DI), theme, VND formatters, date helpers
+├── models/    Expense, ExpenseCategory
+├── data/      SqfliteExpenseRepository (+InMemory for tests), ReceiptImageStore
+├── services/  OcrService, receipt_layout (row merge), ReceiptParser, receipt_scanner
+├── state/     ExpenseStore (ChangeNotifier) + chart aggregates
+└── ui/        screens (home, dashboard, history, camera, review), widgets (painters)
+</code></pre>
+<p><strong>Data flow.</strong> Camera → <code>ReceiptImageStore.saveReceipt</code> (isolate: EXIF rotation → crop to frame → resize → thumbnail) → <code>OcrService</code> (ML Kit, then lines merged into rows) → <code>ReceiptParser</code> (pure Dart) → draft <code>Expense</code> → <code>ReviewScreen</code> → <code>ExpenseStore.add</code> → SQLite.</p>
+<p><strong>State management.</strong> One <code>ExpenseStore</code> (<code>ChangeNotifier</code>) is exposed through an <code>InheritedNotifier</code> (<code>AppScope</code>), so no extra package is needed. Writes go to the repository first, and the in-memory list changes only after the write succeeds. The chart aggregates (<code>totalsByCategory</code>, <code>dailyTotals</code>) are computed from that list.</p>
+<p><strong>Testability.</strong> The parser and layout logic never touch ML Kit types. They work on plain strings and boxes, so every heuristic has a unit test. The repository is an interface, and an in-memory version drives the widget tests and screenshot rendering.</p>
+<p><strong>Exception handling.</strong></p>
+<ul>
+<li>Camera permission denial and device errors (<code>CameraException</code>) show an explanation with <em>Try again</em> and <em>Pick from gallery</em>.</li>
+<li>Focus and flash calls that a device does not support are ignored.</li>
+<li>If OCR fails after the image was saved, the image is deleted and an error snackbar is shown.</li>
+<li>An empty OCR result shows a “No text detected” card instead of empty fields.</li>
+<li>Database load errors are kept in the store, and save errors appear in a snackbar.</li>
+</ul>
+<hr />
+<h2>4. EMPIRICAL EVIDENCE &amp; SCREENSHOTS</h2>
+<p>Screenshots below were rendered from the real app widgets at phone size (1080×2340) by <code>screenshot_test/</code>, using sample data. On the camera screen the live feed is a simulated receipt photo fed through a fake <code>CameraPlatform</code>. Replace them with device captures from the demo video if required.</p>
+<table class='shots'>
+<thead>
+<tr>
+<th style="text-align: center;"><img alt="Camera" src="screenshots/03_camera.png" /></th>
+<th style="text-align: center;"><img alt="Review" src="screenshots/04_review.png" /></th>
+<th style="text-align: center;"><img alt="Dashboard" src="screenshots/01_dashboard.png" /></th>
+<th style="text-align: center;"><img alt="Weekly" src="screenshots/02_dashboard_weekly.png" /></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong>Fig. 1 – Capture.</strong> Framing overlay with corner brackets, tap-to-focus ring, flash toggle (top right), gallery / manual fallbacks.</td>
+<td style="text-align: center;"><strong>Fig. 2 – Review.</strong> Image cropped to the frame. Parser output: merchant <em>Co.opmart</em>, total <em>150.000 ₫</em> (cash 200.000 and change 50.000 rejected), date 08/10/2026, category Food; other amounts as chips.</td>
+<td style="text-align: center;"><strong>Fig. 3 – Donut chart.</strong> “Gear” slice selected by tap: it thickens, the others fade, and the centre and legend update.</td>
+<td style="text-align: center;"><strong>Fig. 4 – Weekly bar chart.</strong> Tooltip on the tapped bar, today (Thu) highlighted, “nice” axis steps, week navigation.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Verification results</strong></p>
+<ul>
+<li><code>flutter analyze</code> → <em>No issues found</em>. <code>flutter test</code> → <strong>25/25 passed</strong>: 16 parser tests (Vietnamese/English receipts, VAT-inclusive totals, label/value on separate rows, invalid and future dates, O-for-0 repair), plus chart geometry, store aggregates, and donut/bar tap interaction.</li>
+<li><code>flutter build apk --release</code> → <code>app-release.apk</code> (85.3 MB universal). With <code>--split-per-abi</code>: arm64-v8a 31.9 MB, armeabi-v7a 25.6 MB. Most of the size is the bundled ML Kit model, which is what lets OCR work offline.</li>
+</ul>
+<hr />
+<h2>5. TECHNICAL CHALLENGES &amp; RESOLUTIONS</h2>
+<p><strong>1. ML Kit splits a receipt's columns into separate text blocks.</strong> ML Kit groups text by layout block. On a two-column receipt, “TỔNG CỘNG” sits in the left block and “150.000” in the right block, so they come back far apart, and a line-based regex cannot link the label to its value. <em>Resolution:</em> <code>mergeIntoRows</code> sorts all ML Kit lines by their vertical centre. A line joins the current row when its centre is within half a line height of the row, which tolerates slight camera tilt. Each row is then joined left to right, giving “TỔNG CỘNG  150.000” before parsing. When a label still ends up on its own row, the parser carries the keyword score over to the next row. Both cases are unit-tested.</p>
+<p><strong>2. Choosing the real total among many numbers.</strong> A receipt holds item prices, VAT, cash given (<code>Tiền khách đưa 200.000</code>) and change, as well as phone numbers, tax IDs and dates. Vietnamese receipts also use <code>.</code> and <code>,</code> as thousands separators, and OCR often reads <code>0</code> as <code>O</code>. <em>Resolution:</em> the parser runs in stages:</p>
+<ol>
+<li>Fold diacritics and repair O-for-0 errors.</li>
+<li>Remove dates, times and percentages; ignore phone and tax-ID lines.</li>
+<li>Read number tokens by digit grouping, so <code>150.000</code> = <code>150,000</code> = 150000 and <code>150,000.00</code> keeps its decimal.</li>
+<li>Score each candidate (total keyword +8, subtotal +2, currency mark +2, cash/change/discount/VAT −7, lower half of the receipt +1).</li>
+</ol>
+<p>“đã gồm VAT” is not treated as a tax line. If no line scores high enough, the largest non-cash amount is used and marked low confidence for the user to check.</p>
+<p><strong>3. Crop mismatch between preview and photo; release-build issues.</strong> The preview stream and the still photo can have different aspect ratios, so cropping the photo with the on-screen frame fractions cut off part of the receipt. <em>Resolution:</em> the photo is first centre-cropped to the preview's aspect ratio (what the user actually saw), then the frame fractions are applied. This runs in a <code>compute</code> isolate, because decoding a 12 MP JPEG in Dart takes about a second and would freeze the UI. Two build issues came up for the release APK:</p>
+<ul>
+<li>On Windows, Gradle failed with <em>“Could not close incremental caches”</em> in <code>camera_android_camerax</code> and <code>image_picker_android</code>, because the project (drive E:) and the pub cache (drive C:) are on different drives. Setting <code>kotlin.incremental=false</code> in <code>android/gradle.properties</code> fixed it.</li>
+<li>The ML Kit plugin references the Chinese, Japanese, Korean and Devanagari recognisers only as <code>compileOnly</code> dependencies. With R8 minification turned on, <code>-dontwarn</code> rules for those packages were added to <code>proguard-rules.pro</code> so the shrinker does not stop on the missing classes.</li>
+</ul></body></html>
