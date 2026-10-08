@@ -7,7 +7,7 @@ A Flutter app that turns a photo of a paper receipt into a saved expense, fully
 offline. Google ML Kit reads the text on-device, a regex heuristic engine pulls
 out the total, merchant and date, and the user checks the result before it is
 stored in SQLite. Spending is shown in an animated donut chart and a weekly bar
-chart, both drawn with `CustomPainter` (no chart library).
+chart, both drawn with `CustomPainter`.
 
 ## Download
 
